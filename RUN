@@ -1,0 +1,47 @@
+import os
+import sys
+import shutil
+import platform
+
+# ৩২-বিট (32-bit) চেক করার জন্য
+arch = platform.machine().lower()
+if 'armv7' in arch or 'armv8l' in arch or 'i386' in arch or 'i686' in arch:
+    print("\n[!] 32-bit Device Detected!")
+    print("[!] This tool only supports 64-bit (AArch64) devices.\n")
+    sys.exit(1)
+
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+target_so = None
+
+# RUHIT দিয়ে শুরু এবং .so দিয়ে শেষ ফাইল খোঁজা
+for f in os.listdir(cur_dir):
+    if f.startswith("RUHIT") and f.endswith(".so"):
+        target_so = os.path.join(cur_dir, f)
+        break
+
+if target_so is None:
+    print("[!] ERROR: RUHIT .so file not found!")
+    sys.exit(1)
+
+# টার্মাক্স স্টোরেজ পারমিশন সমস্যা এড়াতে ক্যাশে ডিরেক্টরিতে কপি করা
+if "/storage/emulated/" in cur_dir or "/sdcard" in cur_dir:
+    cache_dir = os.path.expanduser("~/.cache_hbx_runner")
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_so = os.path.join(cache_dir, "RUHIT.so")
+    shutil.copy2(target_so, cache_so)
+    if cache_dir not in sys.path:
+        sys.path.insert(0, cache_dir)
+    import RUHIT
+else:
+    if cur_dir not in sys.path:
+        sys.path.insert(0, cur_dir)
+    import RUHIT
+
+# মেইন ফাংশন রান করা
+if hasattr(RUHIT, "main"):
+    RUHIT.main()
+elif hasattr(RUHIT, "run"):
+    RUHIT.run()
+else:
+    print("[!] ERROR: No main() or run() function found in RUHIT module!")
+    sys.exit(1)
